@@ -22,8 +22,9 @@ const logger = winston.createLogger({
     // - Write to all logs with level `info` and below to `combined.log` 
     // - Write all logs error (and below) to `error.log`.
     //
-    new winston.transports.File({ filename: logDir + '/error.log', level: 'error' }),
-    new winston.transports.File({ filename: logDir + '/combined.log' })
+    // new winston.transports.File({ filename: logDir + '/error.log', level: 'error' }),
+    // new winston.transports.File({ filename: logDir + '/combined.log' })
+    new winston.transports.Console()
   ]
 });
 
@@ -55,3 +56,23 @@ function findFiles(dir, output, cFactor) {
 }
 
 findFiles(inDir, outDir, charcoalFactor);
+
+process.on('SIGINT', function onSigint () {
+	console.info('Got SIGINT (aka ctrl-c in docker). Graceful shutdown ', new Date().toISOString());
+  shutdown();
+});
+
+process.on('SIGTERM', function onSigterm () {
+  console.info('Got SIGTERM (docker container stop). Graceful shutdown ', new Date().toISOString());
+  shutdown();
+})
+
+function shutdown() {
+  server.close(function onServerClosed (err) {
+    if (err) {
+      console.error(err);
+      process.exitCode = 1;
+		}
+		process.exit();
+  })
+}
