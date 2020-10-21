@@ -3,6 +3,8 @@ version: '2.4'
 services:
   redis:
     image: redis:alpine
+    healthcheck:
+      test: redis-cli ping
     networks:
       - frontend
 
@@ -12,26 +14,70 @@ services:
       - db-data:/var/lib/postgresql/data
     environment:
       - POSTGRES_HOST_AUTH_METHOD=trust
+    healthcheck:
+      test: pg_isready -h 127.0.0.1  #definisce il test per l'healthcheck
     networks:
       - backend
 
   vote:
-    image: bretfisher/examplevotingapp_vote
+    image: bretfisher/examplevotingapp_vote:vote-bug
     ports:
-      - '5000:80'
+      - '5000:81' #Se uso il proxy traefik potrei risparmiami di esporre una porta
     networks:
       - frontend
+    depends_on: 
+      redis:
+        condition: service_healthy
+    labels:
+      - traefik.port=81 #Porta all'interno del container dove è il servizio
+      - traefik.frontend.rule=Host:vote.localhost,vote.vcap.me
 
   result:
     build: 
       context: result
+    command: nodemon --inspect=0.0.0.0:9229 index.js
+    volumes:
+      - ./result:/app
     ports:
-      - '5001:80'
+      - '5001:80' #Se uso il proxy traefik potrei risparmiami di esporre una porta
+      - '9229:9229'
+    environment: 
+      - NODE_ENV=development
     networks:
       - backend
+    depends_on: 
+      db:
+        condition: service_healthy
+    labels:
+      - traefik.port=80 #Porta all'interno del container dove è il servizio
+      - traefik.frontend.rule=Host:result.localhost,result.vcap.me
 
   worker:
     image: bretfisher/examplevotingapp_worker:java
+    networks:
+      - frontend
+      - backend
+    depends_on: 
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  traefik:
+    image: traefik:1.7-alpine
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8080:80" #Proxy esposto sulla porta 8080
+    command:
+      - --docker
+      - --docker.domain=traefik
+      - --docker.watch
+      - --api
+      - --defaultentrypoints=http,https
+    labels:
+      - traefik.port=8080 
+      - traefik.frontend.rule=Host:traefik.localhost,traefik.vcap.me #creo una voce proxy anche per il proxy stesso
     networks:
       - frontend
       - backend

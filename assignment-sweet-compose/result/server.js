@@ -1,5 +1,5 @@
 /* jshint node: true */
-/* jshint esversion: 6 */
+/* jshint esversion: 6 */ 
 var express = require('express'),
     async = require('async'),
     pg = require('pg'),
