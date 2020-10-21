@@ -6,7 +6,8 @@ services:
     ports:
       - 3000:3000
     volumes:
-      - .:/app
+      - .:/node/app #La cartella node_module del container sara in /node
+      - /node/app/node_modules #Maschera (nasconde) il bind_mount di node_modules dall'host
     environment:
       - DEBUG=sample-express:*
 
