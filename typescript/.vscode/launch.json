@@ -9,10 +9,10 @@
             "request": "attach",
             "name": "Docker Nodemon TypeScript Attach",
             // app path in container
-            "remoteRoot": "/app",
+            "remoteRoot": "/app", //Path workdir nel container
             // auto-reconnect to debugger when
             // nodemon restarts node after file change
-            "restart": true,
+            "restart": true, //Debug riconnette ogni volta che nodemon "ricompila"
             // path on host to typescript output js
             "outFiles": ["${workspaceFolder}/dist/**/*.js"]
         }
